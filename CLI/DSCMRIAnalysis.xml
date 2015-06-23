@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<executable>
+  <category>Quantification</category>
+  <title>DSCMRIAnalysis</title>
+  <index>2</index>
+  <description><![CDATA[Analysis of Dynamic Susceptibility Contrast (DSC) MRI. Inputs are a multivolume (vector image) where each voxel contains a time series and a label map (binary image) indicating where to define the arterial input function.\n\n]]></description>
+  <version>0.0.1</version>
+  <documentation-url>to appear</documentation-url>
+  <license/>
+  <contributor>Xiao Da (MGH), Yangming Ou (MGH), Andriy Fedorov (BWH), Steve Pieper (Isomics), Jayashree Kalpathy-Cramer (MGH)  </contributor>
+  <acknowledgements><![CDATA[This work is part of the National Alliance for Medical Image Computing (NA-MIC), funded by the National Institutes of Health through the NIH Roadmap for Medical Research, and by National Cancer Institute as part of the Quantitative Imaging Network initiative (U01CA154601) and QIICR (U24CA180918).]]></acknowledgements>
+  <parameters>
+    <label>PkModeling Parameters</label>
+    <description><![CDATA[Parameters used for PkModeling]]></description>
+    <float hidden="true">
+      <name>T1PreBloodValue</name>   
+      <description><![CDATA[T1 value for blood.]]></description>
+      <longflag>T1Blood</longflag>      
+      <label>T1 Blood Value</label>
+      <channel>input</channel>
+      <default>1600</default>
+    </float>    
+    <float hidden="true">
+      <name>T1PreTissueValue</name>   
+      <description><![CDATA[T1 value for tissue.]]></description>
+      <longflag>T1Tissue</longflag>      
+      <label>T1 Tissue Value</label>
+      <channel>input</channel>
+      <default>1597</default>
+    </float>    
+    <float hidden="true">
+      <name>RelaxivityValue</name>   
+      <description><![CDATA[Contrast agent relaxivity value. Default value corresponds to Gd-DPTA (Magnevist) at 3T.]]></description>
+      <longflag>relaxivity</longflag>      
+      <label>Relaxivity Value</label>
+      <channel>input</channel>
+      <default>0.0039</default>
+    </float>
+    <float hidden="true">
+      <name>S0GradValue</name>   
+      <description><![CDATA[Signal Gradient Threshold value.]]></description>
+      <longflag>S0grad</longflag>      
+      <label>Signal Gradient Threshold Value</label>
+      <channel>input</channel>
+      <default>15.0</default>      
+    </float>	
+    <float hidden="true">
+      <name>FTolerance</name>   
+      <description><![CDATA[Tolerance on function value for establishing convergence.]]></description>
+      <longflag>fTolerance</longflag>      
+      <label>F Tolerance Value</label>
+      <channel>input</channel>
+      <default>1e-4</default>      
+    </float>
+    <float hidden="true">
+      <name>GTolerance</name>   
+      <description><![CDATA[Tolerance on gradient value for establishing convergence.]]></description>
+      <longflag>gTolerance</longflag>      
+      <label>G Tolerance Value</label>
+      <channel>input</channel>
+      <default>1e-4</default>      
+    </float>
+    <float hidden="true">
+      <name>XTolerance</name>   
+      <description><![CDATA[Tolerance on parameter values for establishing convergence.]]></description>
+      <longflag>xTolerance</longflag>      
+      <label>X Tolerance Value</label>
+      <channel>input</channel>
+      <default>1e-5</default>
+    </float>
+    <float hidden="true">
+      <name>Epsilon</name>   
+      <description><![CDATA[Epsilon value.]]></description>
+      <longflag>epsilon</longflag>      
+      <label>Epsilon Value</label>
+      <channel>input</channel>
+      <default>1e-9</default>      
+    </float>
+    <float hidden="true">
+      <name>MaxIter</name>   
+      <description><![CDATA[Maximum number of iterations in optimizing the parameter estimation at each voxel.]]></description>
+      <longflag>maxIter</longflag>      
+      <label>Maximum number of iterations</label>
+      <channel>input</channel>
+      <default>200</default>      
+    </float>
+    <float hidden="true">
+      <name>Hematocrit</name>   
+      <description><![CDATA[Hematocrit value, volume percentage of red blood cells in blood.]]></description>
+      <longflag>hematocrit</longflag>      
+      <label>Hematocrit Value</label>
+      <channel>input</channel>
+      <default>0.4</default>
+    </float>
+    <float>
+      <name>AUCTimeInterval</name>   
+      <description><![CDATA[CBV and CBF Time Interval value.]]></description>
+      <longflag>aucTimeInterval</longflag>      
+      <label>CBV/CBF Time Interval Value</label>
+      <channel>input</channel>
+      <default>90</default>      
+    </float>
+    <boolean hidden="true">
+      <name>ComputeFpv</name>
+      <longflag>computeFpv</longflag>
+      <label>Compute fpv (3-parameter model)</label>
+      <description><![CDATA[Enable estimation of fractional plasma volume at each voxel.]]></description>
+      <default>False</default>
+    </boolean>
+    <boolean>
+      <name>UsePopulationAIF</name>
+      <longflag>usePopAif</longflag>
+      <label>Use Population AIF </label>
+      <description><![CDATA[Use generic population AIF.]]></description>
+      <default>False</default>
+    </boolean>
+  </parameters>
+  <parameters>
+    <label>IO</label>
+    <description><![CDATA[Input/output parameters]]></description>    
+    <image type="dynamic-contrast-enhanced">
+      <name>InputFourDImageFileName</name>
+      <label>Input 4D Image</label>
+      <channel>input</channel>
+      <index>0</index>
+      <description><![CDATA[Input 4D Image (txyz)]]></description>
+    </image>	 
+
+    <image type="label">
+      <name>ROIMaskFileName</name>
+      <longflag>roiMask</longflag>
+      <label>ROI Mask Image</label>
+      <channel>input</channel>
+      <description><![CDATA[(Optional) Mask designating the voxels (non-zero) where the model should be fit. If not specified, the model will be fit to all voxels in the image.]]></description>
+    </image>
+
+    <image type="label">
+      <name>AIFMaskFileName</name>
+      <longflag>aifMask</longflag>
+      <label>AIF Mask Image</label>
+      <channel>input</channel>
+      <description><![CDATA[Mask designating the location of the arterial input function (AIF). AIF can be calculated from a generic population AIF, the input using the aifMask or can be prescribed directly in concentration units using the prescribedAIF option.]]></description>
+    </image>
+    <measurement fileExtensions=".mcsv">
+      <name>PrescribedAIFFileName</name>
+      <label>Prescribed AIF</label>
+      <longflag>prescribedAIF</longflag>
+      <channel>input</channel>
+      <description><![CDATA[Prescribed arterial input function (AIF). AIF can either be calculated from the input using the aifMask option or can be prescribed directly in concentration units using the prescribedAIF option.]]></description>
+    </measurement>
+    <image>
+      <name>OutputKtransFileName</name>
+      <longflag>outputKtrans</longflag>
+      <label>Output Ktrans image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output volume transfer constant between blood plasma and EES (extracellular-extravascular space) at each voxel.]]></description>
+    </image>
+    <image hidden="true">
+      <name>OutputVeFileName</name>
+      <longflag>outputVe</longflag>
+      <label>Output ve image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output fractional volume for extracellular space at each voxel.]]></description>
+    </image>
+    <image hidden="true">
+      <name>OutputFpvFileName</name>
+      <longflag>outputFpv</longflag>
+      <label>Output fpv image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output fractional plasma volume at each voxel.]]></description>
+    </image>
+    <image hidden="true">
+      <name>OutputMaxSlopeFileName</name>
+      <longflag>outputMaxSlope</longflag>
+      <label>Output maximum slope image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output maximum slope in the time series curve of each voxel.]]></description>
+    </image>
+    <image>
+      <name>OutputAUCFileName</name>
+      <longflag>outputAUC</longflag>
+      <label>Output RCBV image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output Relative Cerebral Blood Volume (rCBV) of each voxel, measured from bolus arrival time to the end time of interval.]]></description>
+    </image>
+    <image>
+      <name>OutputCBFFileName</name>
+      <longflag>outputCBF</longflag>
+      <label>Output RCBF image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output Relative Cerebral Blood Flow (rCBF) of each voxel, measured from bolus arrival time to the end time of interval.]]></description>
+    </image>
+    <image>
+      <name>OutputMTTFileName</name>
+      <longflag>outputMTT</longflag>
+      <label>Output MTT image</label>
+      <channel>output</channel>      
+      <description><![CDATA[Output Mean Transit Time (MTT) of each voxel, measured from bolus arrival time to the end time of interval.]]></description>
+    </image>
+  </parameters>
+  <parameters advanced="true">
+    <label>Advanced options</label>
+    <description><![CDATA[Debugging and advanced research options.]]></description> 
+    <string-enumeration>
+      <name>BATCalculationMode</name>
+      <longflag>BATCalculationMode</longflag>
+      <label>BAT Calculation Mode</label>
+      <description>Determine how to calculate bolus arrival time.</description>
+      <default>PeakGradient</default>
+      <element>PeakGradient</element>
+      <element>UseConstantBAT</element>
+    </string-enumeration>
+    <integer>
+      <name>ConstantBAT</name>
+      <description><![CDATA[Constant Bolus Arrival Time index(frame number).]]></description>
+      <longflag>constantBAT</longflag>
+      <label>Constant BAT</label>
+      <channel>input</channel>
+      <default>1</default>
+    </integer>
+    <image hidden="true">
+      <name>OutputRSquaredFileName</name>
+      <longflag>outputRSquared</longflag>
+      <label>Output R-squared goodness of fit image</label>
+      <channel>output</channel>      
+      <description><![CDATA[R-squared goodness of fit of the model to each voxel. Setting this output changes the returned images.  When this output is not used, the output parameter volumes only contain the voxels where good fits were obtained.  When this output is set, the parameter volumes for every voxel is output and may be masked by the R-squared volume in a separate module.]]></description>
+    </image>
+    <image>
+      <name>OutputBolusArrivalTimeImageFileName</name>
+      <label>Output Bolus Arrival Time Image</label>
+      <channel>output</channel>
+      <longflag>outputBAT</longflag>
+      <description><![CDATA[Output Per-Pixel Bolus Arrival Time (xyz)]]></description>
+    </image>
+    <image type="dynamic-contrast-enhanced">
+      <name>OutputConcentrationsImageFileName</name>
+      <label>Output Concentrations 4D Image</label>
+      <channel>output</channel>
+      <longflag>concentrations</longflag>
+      <description><![CDATA[Output Concentrations 4D Image (txyz)]]></description>
+    </image>	 
+    <image type="dynamic-contrast-enhanced">
+      <name>OutputFittedDataImageFileName</name>
+      <label>Output Fitted Data 4D Image</label>
+      <channel>output</channel>
+      <longflag>fitted</longflag>
+      <description><![CDATA[Output Fitted Data 4D Image (txyz)]]></description>
+    </image>	 
+  </parameters>
+</executable>
