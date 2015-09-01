@@ -40,7 +40,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>::Con
   m_constantBAT = 0;
   m_BATCalculationMode = "PeakGradient";
   this->Superclass::SetNumberOfRequiredInputs(1);
-  this->Superclass::SetNthOutput(1, static_cast<TOutputImage*>(this->MakeOutput(1).GetPointer()));  // Ktrans
+  this->Superclass::SetNthOutput(1, static_cast<TOutputImage*>(this->MakeOutput(1).GetPointer()));  // K2
   this->Superclass::SetNthOutput(2, static_cast<TOutputImage*>(this->MakeOutput(2).GetPointer()));  // Ve
   this->Superclass::SetNthOutput(3, static_cast<TOutputImage*>(this->MakeOutput(3).GetPointer()));  // Max slope
   this->Superclass::SetNthOutput(4, static_cast<TOutputImage*>(this->MakeOutput(4).GetPointer()));  // AUC
@@ -124,7 +124,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage, TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetKTransOutput()
+::GetK2Output()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(0) );
 }
@@ -315,7 +315,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   VectorVoxelType vectorVoxel, fittedVectorVoxel;
 
   float tempFpv = 0.0f;
-  float tempKtrans = 0.0f;
+  float tempK2 = 0.0f;
   float tempVe = 0.0f;
   float tempMaxSlope = 0.0f;
   float tempAUC = 0.0f;
@@ -327,7 +327,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   const VectorVolumeType* inputVectorVolume = this->GetInput();
 
   VectorVolumeConstIterType inputVectorVolumeIter(inputVectorVolume, outputRegionForThread);
-  OutputVolumeIterType ktransVolumeIter(this->GetKTransOutput(), outputRegionForThread);
+  OutputVolumeIterType k2VolumeIter(this->GetK2Output(), outputRegionForThread);
   OutputVolumeIterType veVolumeIter(this->GetVEOutput(), outputRegionForThread);
   typename VectorVolumeType::Pointer fitted = this->GetFittedDataOutput();
   VectorVolumeIterType fittedVolumeIter(fitted, outputRegionForThread);
@@ -368,7 +368,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   // pk_solver(timeSize, &timeMinute[0],
   //           &m_AIF[0],
   //           &m_AIF[0],
-  //           tempKtrans, tempVe, tempFpv,
+  //           tempK2, tempVe, tempFpv,
   //           m_fTol,m_gTol,m_xTol,
   //           m_epsilon,m_maxIter, m_hematocrit,
   //           optimizer,costFunction);
@@ -381,10 +381,10 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   int shift;
   unsigned int shiftStart = 0, shiftEnd = 0;
   bool success = true;
-  while (!ktransVolumeIter.IsAtEnd())
+  while (!k2VolumeIter.IsAtEnd())
     {
     success = true;
-    tempKtrans = tempVe = tempFpv = tempMaxSlope = tempAUC = tempMTT = tempCBF = 0.0;
+    tempK2 = tempVe = tempFpv = tempMaxSlope = tempAUC = tempMTT = tempCBF = 0.0;
     BATIndex = FirstPeakIndex = 0;
 
     if(!this->GetROIMask() || (this->GetROIMask() && roiMaskVolumeIter.Get()))
@@ -442,41 +442,35 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
           }
         }
 
-      // Calculate parameter ktrans, ve, and fpv
+      // Calculate parameter k2, ve, and fpv
       double rSquared = 0.0;
       if (success)
         {
         pk_solver(timeSize, &timeMinute[0],
           	const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ),
           	&m_AIF[0],
-          	tempKtrans, tempVe, tempFpv,
+          	tempK2, tempVe, tempFpv,
           	m_fTol,m_gTol,m_xTol,
           	m_epsilon,m_maxIter, m_hematocrit,
             optimizer,costFunction,m_ModelType,m_constantBAT,m_BATCalculationMode);
 
         itk::LMCostFunction::ParametersType param(3);
-        param[0] = tempKtrans; param[1] = tempVe;
+        param[0] = tempK2; param[1] = tempVe;
         if(m_ModelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
           {
           param[2] = tempFpv;
           }
-        itk::LMCostFunction::MeasureType measure =
+        //itk::LMCostFunction::MeasureType measure =
+        itk::LMCostFunction::ArrayType IntCb =
           costFunction->GetFittedFunction(param);
         for(size_t i=0;i<fittedVectorVoxel.GetSize();i++)
           {
-            fittedVectorVoxel[i] = measure[i];
-//printf("fitted conc=%f\n", measure[i]);
+            fittedVectorVoxel[i] = shiftedVectorVoxel[i]+tempK2*IntCb[i];
           }
         
         // Shift the current time course to align with the BAT of the AIF
         // (note the sense of the shift)
-        //shiftedVectorVoxel.Fill(0.0);
-//for (unsigned int i=shiftStart; i<shiftEnd; ++i)
-//printf("test 1, shiftedVectorVoxel=%f\n", shiftedVectorVoxel[i]);
-
-
-	//VectorVoxelType shiftedbackVectorVoxel(timeSize);
-	//shiftedbackVectorVoxel.Fill(0.0);
+        shiftedVectorVoxel.Fill(0.0);
 
         if (shift <= 0)
           {
@@ -484,16 +478,13 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
           shiftStart = shift*-1.;
           shiftEnd = vectorVoxel.Size();
 
-          //for (unsigned int i = shiftStart; i < shiftEnd; ++i)
-            //{
-            //shiftedVectorVoxel[i] = fittedVectorVoxel[i + shift];
-            //shiftedbackVectorVoxel[i] = shiftedVectorVoxel[i + shift];
-//printf("shiftedVectorVoxel(%d) = %f, fittedVectorVoxel=%f\n", i, shiftedVectorVoxel[i], fittedVectorVoxel[i+shift]);
-            //}
+          for (unsigned int i = shiftStart; i < shiftEnd; ++i)
+            {
+            shiftedVectorVoxel[i] = fittedVectorVoxel[i + shift];
+            }
           }
 
-        //fittedVolumeIter.Set(shiftedVectorVoxel);
-        fittedVolumeIter.Set(vectorVoxel);
+        fittedVolumeIter.Set(shiftedVectorVoxel);
 
         // Only keep the estimated values if the optimization produced a good answer
         // Check R-squared:
@@ -508,8 +499,8 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
      
         // SSerr we can get easily from the optimizer
         double rms = optimizer->GetOptimizer()->get_end_error();
-        //double SSerr = rms*rms*shiftedVectorVoxel.GetSize();
-        double SSerr = rms*rms*vectorVoxel.GetSize();
+        double SSerr = rms*rms*shiftedVectorVoxel.GetSize();
+        //double SSerr = rms*rms*vectorVoxel.GetSize();
      
         // if we couldn't get rms from the optimizer, we would calculate SSerr ourselves
         // LMCostFunction::MeasureType residuals = costFunction->GetValue(optimizer->GetCurrentPosition());
@@ -524,45 +515,37 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
         double sum = 0.0;
         for (unsigned int i=0; i < shiftedVectorVoxel.GetSize(); ++i)
           {
-          //sum += shiftedVectorVoxel[i];
-          //sumSquared += (shiftedVectorVoxel[i]*shiftedVectorVoxel[i]);
-	  sum += vectorVoxel[i];
-          sumSquared += (vectorVoxel[i]*vectorVoxel[i]);          
+          sum += shiftedVectorVoxel[i];
+          sumSquared += (shiftedVectorVoxel[i]*shiftedVectorVoxel[i]);
+	  //sum += vectorVoxel[i];
+          //sumSquared += (vectorVoxel[i]*vectorVoxel[i]);          
 	  }
-        //double SStot = sumSquared - sum*sum/(double)shiftedVectorVoxel.GetSize();
-	double SStot = sumSquared - sum*sum/(double)vectorVoxel.GetSize();     
+        double SStot = sumSquared - sum*sum/(double)shiftedVectorVoxel.GetSize();
+	//double SStot = sumSquared - sum*sum/(double)vectorVoxel.GetSize();     
 
         rSquared = 1.0 - (SSerr / SStot);
      
         double rSquaredThreshold = 0.15;
-        //if (rSquared < rSquaredThreshold)
-          //{
-          //success = false;
-          //}
         }
-      // Calculate parameter CBV, normalized by AIF CBV
+      // Calculate parameter CBV
       if (success)
         {
         tempAUC =
-          //(area_under_curve(timeSize, &m_Timing[0], const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) )/m_aifAUC;
-          (area_under_curve(timeSize, &m_Timing[0], const_cast<float *>(vectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
-//printf("tempAUC = %f\n", tempAUC);
+          (area_under_curve(timeSize, &m_Timing[0], const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
         }
 
       // Calculate parameter MTT
       if (success)
         {
         tempMTT =
-          (mean_transit_time(timeSize, &m_Timing[0], const_cast<float *>(vectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
-//printf("tempAUC = %f\n", tempAUC);
+          (mean_transit_time(timeSize, &m_Timing[0], const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
         }
      
       // Calculate parameter CBF
       if (success)
         {
         tempCBF =
-          (cerebral_blood_flow(timeSize, &m_Timing[0], const_cast<float *>(vectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
-//printf("tempAUC = %f\n", tempAUC);
+          (cerebral_blood_flow(timeSize, &m_Timing[0], const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
         }
      
       // Do we mask the output volumes by the R-squared value?
@@ -572,7 +555,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
         // default to zero
         if (success)
           {
-          ktransVolumeIter.Set(static_cast<OutputVolumePixelType>(tempKtrans) );
+          k2VolumeIter.Set(static_cast<OutputVolumePixelType>(tempK2) );
           veVolumeIter.Set(static_cast<OutputVolumePixelType>(tempVe) );
           maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(tempMaxSlope) );
           aucVolumeIter.Set(static_cast<OutputVolumePixelType>(tempAUC) );
@@ -585,7 +568,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
           }
         else
           {
-          ktransVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
+          k2VolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
           veVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
           maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
           aucVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
@@ -595,7 +578,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
         }
       else
         {
-        ktransVolumeIter.Set(static_cast<OutputVolumePixelType>(tempKtrans) );
+        k2VolumeIter.Set(static_cast<OutputVolumePixelType>(tempK2) );
         veVolumeIter.Set(static_cast<OutputVolumePixelType>(tempVe) );
         maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(tempMaxSlope) );
         aucVolumeIter.Set(static_cast<OutputVolumePixelType>(tempAUC) );
@@ -612,7 +595,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
       }
     else
       {
-      ktransVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
+      k2VolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       veVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       aucVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
@@ -620,7 +603,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
       cbfVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       }
 
-    ++ktransVolumeIter;
+    ++k2VolumeIter;
     ++veVolumeIter;
     ++maxSlopeVolumeIter;
     ++aucVolumeIter;

@@ -415,13 +415,13 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
   quantifier->Update();
 
   //set output
-  if (!OutputKtransFileName.empty())
+  if (!OutputK2FileName.empty())
     {
-    typename OutputVolumeWriterType::Pointer ktranswriter = OutputVolumeWriterType::New();
-    ktranswriter->SetInput(quantifier->GetKTransOutput() );
-    ktranswriter->SetFileName(OutputKtransFileName.c_str() );
-    ktranswriter->SetUseCompression(1);
-    ktranswriter->Update();
+    typename OutputVolumeWriterType::Pointer k2writer = OutputVolumeWriterType::New();
+    k2writer->SetInput(quantifier->GetK2Output() );
+    k2writer->SetFileName(OutputK2FileName.c_str() );
+    k2writer->SetUseCompression(1);
+    k2writer->Update();
     }
 
   if (!OutputVeFileName.empty())

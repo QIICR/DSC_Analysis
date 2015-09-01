@@ -5,13 +5,13 @@
   <index>2</index>
   <description><![CDATA[Analysis of Dynamic Susceptibility Contrast (DSC) MRI. Inputs are a multivolume (vector image) where each voxel contains a time series and a label map (binary image) indicating where to define the arterial input function.\n\n]]></description>
   <version>0.0.1</version>
-  <documentation-url>to appear</documentation-url>
+  <documentation-url>http://slicer.org/slicerWiki/index.php/Documentation/Nightly/Modules/DSC_MRI_Analysis</documentation-url>
   <license/>
   <contributor>Xiao Da (MGH), Yangming Ou (MGH), Andriy Fedorov (BWH), Steve Pieper (Isomics), Jayashree Kalpathy-Cramer (MGH)  </contributor>
   <acknowledgements><![CDATA[This work is part of the National Alliance for Medical Image Computing (NA-MIC), funded by the National Institutes of Health through the NIH Roadmap for Medical Research, and by National Cancer Institute as part of the Quantitative Imaging Network initiative (U01CA154601) and QIICR (U24CA180918).]]></acknowledgements>
   <parameters>
-    <label>PkModeling Parameters</label>
-    <description><![CDATA[Parameters used for PkModeling]]></description>
+    <label>DSC Parameters</label>
+    <description><![CDATA[Parameters used for DSC MRI Analysis]]></description>
     <float hidden="true">
       <name>T1PreBloodValue</name>   
       <description><![CDATA[T1 value for blood.]]></description>
@@ -149,11 +149,11 @@
       <description><![CDATA[Prescribed arterial input function (AIF). AIF can either be calculated from the input using the aifMask option or can be prescribed directly in concentration units using the prescribedAIF option.]]></description>
     </measurement>
     <image>
-      <name>OutputKtransFileName</name>
-      <longflag>outputKtrans</longflag>
-      <label>Output Ktrans image</label>
+      <name>OutputK2FileName</name>
+      <longflag>outputK2</longflag>
+      <label>Output K2 image</label>
       <channel>output</channel>      
-      <description><![CDATA[Output volume transfer constant between blood plasma and EES (extracellular-extravascular space) at each voxel.]]></description>
+      <description><![CDATA[Output leakage map.]]></description>
     </image>
     <image hidden="true">
       <name>OutputVeFileName</name>
@@ -181,21 +181,21 @@
       <longflag>outputAUC</longflag>
       <label>Output RCBV image</label>
       <channel>output</channel>      
-      <description><![CDATA[Output Relative Cerebral Blood Volume (rCBV) of each voxel, measured from bolus arrival time to the end time of interval.]]></description>
+      <description><![CDATA[Output Relative Cerebral Blood Volume (rCBV) map.]]></description>
     </image>
     <image>
       <name>OutputCBFFileName</name>
       <longflag>outputCBF</longflag>
       <label>Output RCBF image</label>
       <channel>output</channel>      
-      <description><![CDATA[Output Relative Cerebral Blood Flow (rCBF) of each voxel, measured from bolus arrival time to the end time of interval.]]></description>
+      <description><![CDATA[Output Relative Cerebral Blood Flow (rCBF) map.]]></description>
     </image>
     <image>
       <name>OutputMTTFileName</name>
       <longflag>outputMTT</longflag>
       <label>Output MTT image</label>
       <channel>output</channel>      
-      <description><![CDATA[Output Mean Transit Time (MTT) of each voxel, measured from bolus arrival time to the end time of interval.]]></description>
+      <description><![CDATA[Output Mean Transit Time (MTT) map.]]></description>
     </image>
   </parameters>
   <parameters advanced="true">

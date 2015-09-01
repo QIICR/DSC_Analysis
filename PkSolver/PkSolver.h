@@ -92,26 +92,38 @@ public:
       Time[i] = cx[i];
     //std::cout << "Time: " << Time << std::endl;
   }
+
+  void SetIntCb (const float* cb, const float* cx, int sz) //leakage curve.
+  {
+    IntCb.set_size (sz);
+    for( int i = 0; i < sz; ++i ) {
+        IntCb[i] = 0;
+        for (int j = 1; j < i; j++ ) 
+            IntCb[i]+= (cx[j]-cx[j-1])*(cb[j]+cb[j-1])/2;
+        }
+    //std::cout << "IntCb: " << IntCb << std::endl;
+  }
         
   MeasureType GetValue( const ParametersType & parameters) const
   {
     MeasureType measure(RangeDimension);
 
-    ValueType Ktrans = parameters[0];
+    ValueType K2 = parameters[0];
     ValueType Ve = parameters[1];
             
     ArrayType VeTerm;
-    VeTerm = -Ktrans/Ve*Time;
+    VeTerm = -K2/Ve*Time;
     ValueType deltaT = Time(1) - Time(0);
     
     if( m_ModelType == TOFTS_3_PARAMETER)
       {
       ValueType f_pv = parameters[2];
-      measure = Cv - (1/(1.0-m_Hematocrit)*(Ktrans*deltaT*Convolution(Cb,Exponential(VeTerm)) + f_pv*Cb));
+      measure = Cv - (1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm)) + f_pv*Cb));
       }
     else if(m_ModelType == TOFTS_2_PARAMETER)
       {
-      measure = Cv - (1/(1.0-m_Hematocrit)*(Ktrans*deltaT*Convolution(Cb,Exponential(VeTerm))));
+      //measure = Cv - (1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm))));
+      measure = Cv -(Ve*Cb-K2*IntCb);
       }
             
     return measure; 
@@ -121,21 +133,22 @@ public:
   {
     MeasureType measure(RangeDimension);
 
-    ValueType Ktrans = parameters[0];
+    ValueType K2 = parameters[0];
     ValueType Ve = parameters[1];
             
     ArrayType VeTerm;
-    VeTerm = -Ktrans/Ve*Time;
+    VeTerm = -K2/Ve*Time;
     ValueType deltaT = Time(1) - Time(0);
     
     if( m_ModelType == TOFTS_3_PARAMETER)
       {
       ValueType f_pv = parameters[2];
-      measure = 1/(1.0-m_Hematocrit)*(Ktrans*deltaT*Convolution(Cb,Exponential(VeTerm)) + f_pv*Cb);
+      measure = 1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm)) + f_pv*Cb);
       }
     else if(m_ModelType == TOFTS_2_PARAMETER)
       {
-      measure = 1/(1.0-m_Hematocrit)*(Ktrans*deltaT*Convolution(Cb,Exponential(VeTerm)));
+      //measure = 1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm)));
+      measure = Ve*Cb-K2*IntCb;
       }
             
     return measure; 
@@ -168,7 +181,7 @@ protected:
   virtual ~LMCostFunction(){}
 private:
         
-  ArrayType Cv, Cb, Time;
+  ArrayType Cv, Cb, Time, IntCb;
         
   ArrayType Convolution(ArrayType X, ArrayType Y) const
   {
@@ -248,7 +261,7 @@ private:
 bool pk_solver(int signalSize, const float* timeAxis, 
                const float* PixelConcentrationCurve, 
                const float* BloodConcentrationCurve, 
-               float& Ktrans, float& Ve, float& Fpv,
+               float& K2, float& Ve, float& Fpv,
                float fTol = 1e-4f, 
                float gTol = 1e-4f, 
                float xTol = 1e-5f,
@@ -261,7 +274,7 @@ bool pk_solver(int signalSize, const float* timeAxis,
 
 bool pk_solver(int signalSize, const float* timeAxis, 
                const float* PixelConcentrationCurve, const float* BloodConcentrationCurve, 
-               float& Ktrans, float& Ve, float& Fpv,
+               float& K2, float& Ve, float& Fpv,
                float fTol, float gTol,float xTol,
                float epsilon, int maxIter, float hematocrit,
                itk::LevenbergMarquardtOptimizer* optimizer,

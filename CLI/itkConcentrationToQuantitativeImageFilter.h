@@ -188,7 +188,7 @@ public:
   itkBooleanMacro( MaskByRSquared );
 
   /// Get the quantitative output images
-  TOutputImage* GetKTransOutput();
+  TOutputImage* GetK2Output();
   TOutputImage* GetVEOutput();
   TOutputImage* GetFPVOutput();
   TOutputImage* GetMaxSlopeOutput();

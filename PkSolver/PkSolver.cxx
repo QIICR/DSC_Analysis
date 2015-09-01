@@ -38,7 +38,7 @@ std::string m_BATCalculationMode;
 bool pk_solver (int signalSize, const float* timeAxis, 
                 const float* PixelConcentrationCurve, 
                 const float* BloodConcentrationCurve, 
-                float& Ktrans, float& Ve, float& Fpv,
+                float& K2, float& Ve, float& Fpv,
                 float fTol, float gTol, float xTol,
                 float epsilon, int maxIter,
                 float hematocrit,
@@ -70,7 +70,7 @@ bool pk_solver (int signalSize, const float* timeAxis,
     initialValue = LMCostFunction::ParametersType(3);
     initialValue[2] = 0.1;     //f_pv //...
     }
-  initialValue[0] = 0.1;     //Ktrans //...
+  initialValue[0] = 0.1;     //K2 //...
   initialValue[1] = 0.5;     //ve //...
  
   costFunction->SetNumberOfValues (signalSize);
@@ -78,6 +78,7 @@ bool pk_solver (int signalSize, const float* timeAxis,
   costFunction->SetCb (BloodConcentrationCurve, signalSize); //BloodConcentrationCurve
   costFunction->SetCv (PixelConcentrationCurve, signalSize); //Signal Y
   costFunction->SetTime (timeAxis, signalSize); //Signal X
+  costFunction->SetIntCb (BloodConcentrationCurve, timeAxis, signalSize); // integral concentration == leakage
   costFunction->SetHematocrit (hematocrit);
   costFunction->GetValue (initialValue);
   costFunction->SetModelType(modelType);
@@ -128,7 +129,7 @@ bool pk_solver (int signalSize, const float* timeAxis,
   finalPosition = optimizer->GetCurrentPosition();
 
   //Solution: remove the scale of 100  
-  Ktrans = finalPosition[0];
+  K2 = finalPosition[0];
   Ve = finalPosition[1];
   if(modelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
     {
@@ -141,7 +142,7 @@ bool pk_solver (int signalSize, const float* timeAxis,
 bool pk_solver(int signalSize, const float* timeAxis, 
                const float* PixelConcentrationCurve, 
                const float* BloodConcentrationCurve, 
-               float& Ktrans, float& Ve, float& Fpv,
+               float& K2, float& Ve, float& Fpv,
                float fTol, float gTol, float xTol,
                float epsilon, int maxIter,
                float hematocrit,
@@ -178,7 +179,7 @@ bool pk_solver(int signalSize, const float* timeAxis,
     initialValue = LMCostFunction::ParametersType(3);
     initialValue[2] = 0.1;     //f_pv //...
     }
-  initialValue[0] = 0.1;     //Ktrans //...
+  initialValue[0] = 0.1;     //K2 //...
   initialValue[1] = 0.5;     //ve //...
         
   costFunction->SetNumberOfValues (signalSize);
@@ -187,6 +188,7 @@ bool pk_solver(int signalSize, const float* timeAxis,
   costFunction->SetCb (BloodConcentrationCurve, signalSize); //BloodConcentrationCurve
   costFunction->SetCv (PixelConcentrationCurve, signalSize); //Signal Y
   costFunction->SetTime (timeAxis, signalSize); //Signal X
+  costFunction->SetIntCb (BloodConcentrationCurve, timeAxis, signalSize); // integral concentration == leakage
   costFunction->SetHematocrit (hematocrit);
   costFunction->GetValue (initialValue); //...
   costFunction->SetModelType(modelType);
@@ -235,7 +237,7 @@ bool pk_solver(int signalSize, const float* timeAxis,
 
         
   //Solution: remove the scale of 100  
-  Ktrans = finalPosition[0];
+  K2 = finalPosition[0];
   Ve = finalPosition[1];
   if(modelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
     {
@@ -245,9 +247,9 @@ bool pk_solver(int signalSize, const float* timeAxis,
   // "Project" back onto the feasible set.  Should really be done as a
   // constraint in the optimization.
   if(Ve<0) Ve = 0;
-  if(Ve>1) Ve = 1;
-  if(Ktrans<0) Ktrans = 0;
-  if(Ktrans>5) Ktrans = 5;
+  //if(Ve>1) Ve = 1;
+  if(K2<0) K2 = 0;
+  //if(K2>5) K2 = 5;
 		
   //if((Fpv>1)||(Fpv<0)) Fpv = 0;
   //  probe.Stop("pk_solver");
@@ -439,7 +441,8 @@ float mean_transit_time(int signalSize,
     }	
 
   //get mtt
-  mtt = intergrate(mul,timeValues,(lastIndex-BATIndex+2))/intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2));
+  //mtt = intergrate(mul,timeValues,(lastIndex-BATIndex+2))/intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2));
+  mtt = intergrate(mul,timeValues,(lastIndex-BATIndex+2))/intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2))-timeValues[0];
   
   delete [] concentrationValues;
   delete [] timeValues;
@@ -512,8 +515,9 @@ float cerebral_blood_flow(int signalSize,
     }	
 
   //get cbf
-  cbf = intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2))/(intergrate(mul,timeValues,(lastIndex-BATIndex+2))/intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2)));
-  
+  //cbf = intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2))/(intergrate(mul,timeValues,(lastIndex-BATIndex+2))/intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2)));
+  cbf = intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2))/((intergrate(mul,timeValues,(lastIndex-BATIndex+2))/intergrate(concentrationValues,timeValues,(lastIndex-BATIndex+2)))-timeValues[0]);
+
   delete [] concentrationValues;
   delete [] timeValues;
   delete [] mul;
