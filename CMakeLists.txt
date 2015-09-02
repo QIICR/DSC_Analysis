@@ -8,7 +8,7 @@ if (NOT Slicer_SOURCE_DIR)
   set(EXTENSION_DESCRIPTION "Analysis of Dynamic Susceptibility Contrast (DSC) MRI.")
   set(EXTENSION_ICONURL "http://slicer.org/slicerWiki/images/9/92/DSC_logo_Resized.png")
   set(EXTENSION_STATUS "Beta")
-  set(EXTENSION_SCREENSHOTURLS "http://slicer.org/slicerWiki/index.php/File:DSC_GUI_V0.png")
+  set(EXTENSION_SCREENSHOTURLS "http://slicer.org/slicerWiki/images/e/e8/DSC_GUI_V0.png")
   set(EXTENSION_ACKNOWLEDGEMENTS "This work is part of the National Alliance for Medical Image Computing (NA-MIC), funded by the National Institutes of Health through the NIH Roadmap for Medical Research, and by National Cancer Institute as part of the Quantitative Imaging Network initiative (U01CA154601) and QIICR (U24CA180918).")
 endif()
 
