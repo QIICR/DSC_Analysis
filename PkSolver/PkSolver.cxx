@@ -38,10 +38,9 @@ std::string m_BATCalculationMode;
 bool pk_solver (int signalSize, const float* timeAxis, 
                 const float* PixelConcentrationCurve, 
                 const float* BloodConcentrationCurve, 
-                float& K2, float& Ve, float& Fpv,
+                float& K2, float& K1, 
                 float fTol, float gTol, float xTol,
                 float epsilon, int maxIter,
-                float hematocrit,
                 int modelType,
                 int constantBAT,
                 const std::string BATCalculationMode)
@@ -71,7 +70,7 @@ bool pk_solver (int signalSize, const float* timeAxis,
     initialValue[2] = 0.1;     //f_pv //...
     }
   initialValue[0] = 0.1;     //K2 //...
-  initialValue[1] = 0.5;     //ve //...
+  initialValue[1] = 0.5;     //K1 //...
  
   costFunction->SetNumberOfValues (signalSize);
 
@@ -79,7 +78,6 @@ bool pk_solver (int signalSize, const float* timeAxis,
   costFunction->SetCv (PixelConcentrationCurve, signalSize); //Signal Y
   costFunction->SetTime (timeAxis, signalSize); //Signal X
   costFunction->SetIntCb (BloodConcentrationCurve, timeAxis, signalSize); // integral concentration == leakage
-  costFunction->SetHematocrit (hematocrit);
   costFunction->GetValue (initialValue);
   costFunction->SetModelType(modelType);
 
@@ -130,11 +128,7 @@ bool pk_solver (int signalSize, const float* timeAxis,
 
   //Solution: remove the scale of 100  
   K2 = finalPosition[0];
-  Ve = finalPosition[1];
-  if(modelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-    {
-    Fpv = finalPosition[2];  
-    }
+  K1 = finalPosition[1];
 
   return true;
 }
@@ -142,10 +136,9 @@ bool pk_solver (int signalSize, const float* timeAxis,
 bool pk_solver(int signalSize, const float* timeAxis, 
                const float* PixelConcentrationCurve, 
                const float* BloodConcentrationCurve, 
-               float& K2, float& Ve, float& Fpv,
+               float& K2, float& K1, 
                float fTol, float gTol, float xTol,
                float epsilon, int maxIter,
-               float hematocrit,
                itk::LevenbergMarquardtOptimizer* optimizer,
                LMCostFunction* costFunction,
                int modelType,
@@ -180,7 +173,7 @@ bool pk_solver(int signalSize, const float* timeAxis,
     initialValue[2] = 0.1;     //f_pv //...
     }
   initialValue[0] = 0.1;     //K2 //...
-  initialValue[1] = 0.5;     //ve //...
+  initialValue[1] = 0.5;     //K1 //...
         
   costFunction->SetNumberOfValues (signalSize);
   
@@ -189,7 +182,6 @@ bool pk_solver(int signalSize, const float* timeAxis,
   costFunction->SetCv (PixelConcentrationCurve, signalSize); //Signal Y
   costFunction->SetTime (timeAxis, signalSize); //Signal X
   costFunction->SetIntCb (BloodConcentrationCurve, timeAxis, signalSize); // integral concentration == leakage
-  costFunction->SetHematocrit (hematocrit);
   costFunction->GetValue (initialValue); //...
   costFunction->SetModelType(modelType);
 
@@ -238,16 +230,12 @@ bool pk_solver(int signalSize, const float* timeAxis,
         
   //Solution: remove the scale of 100  
   K2 = finalPosition[0];
-  Ve = finalPosition[1];
-  if(modelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-    {
-    Fpv = finalPosition[2];  
-    }
+  K1 = finalPosition[1];
 
   // "Project" back onto the feasible set.  Should really be done as a
   // constraint in the optimization.
-  if(Ve<0) Ve = 0;
-  //if(Ve>1) Ve = 1;
+  if(K1<0) K1 = 0;
+  //if(K1>1) K1 = 1;
   if(K2<0) K2 = 0;
   //if(K2>5) K2 = 5;
 		
@@ -271,7 +259,7 @@ void pk_clear()
 
 bool convert_signal_to_concentration (unsigned int signalSize, 
                                       const float* SignalIntensityCurve, 
-                                      const float T1Pre, float TE, float FA,
+                                      float TE, float FA,
                                       float* concentration,
                                       float RGd_relaxivity,
                                       float s0,

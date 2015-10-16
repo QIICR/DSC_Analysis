@@ -10,8 +10,6 @@ template <class TInputImage, class TMaskImage, class TOutputImage>
 SignalIntensityToConcentrationImageFilter<TInputImage, TMaskImage,
                                                     TOutputImage>::SignalIntensityToConcentrationImageFilter()
 {
-  m_T1PreTissue = 0.0f;
-  m_T1PreBlood = m_T1PreTissue;
   m_TE = 0.0f;
   m_FA = 0.0f;
   m_RGD_relaxivity = 4.9E-3f;
@@ -77,34 +75,10 @@ void SignalIntensityToConcentrationImageFilter<TInputImage, TMaskImage, TOutputI
     vectorVoxel.Fill(0.0);
     vectorVoxel += inputVectorVoxel; // shorthand for a copy/cast
 
-    float T1Pre = m_T1PreTissue;
-
-    // if we have ROI, and T1Pre is set to tissue value, check if we need to skip this voxel
-    if( this->GetROIMask() && (this->GetROIMask()->GetBufferedRegion().GetSize()[0])!=0)
-      {
-      if(!roiMaskVolumeIter.Get())
-        {
-        T1Pre = 0;
-        }
-      ++roiMaskVolumeIter;
-      }
-
-    // if we have an AIF mask, use blood T1Pre; even if this voxel was unselected by ROI,
-    // select it for AIF calculation if non-0
-    if( this->GetAIFMask() && (this->GetAIFMask()->GetBufferedRegion().GetSize()[0])!=0)
-      {
-      if(aifMaskVolumeIter.Get())
-        {
-        T1Pre = m_T1PreBlood;
-        }
-      ++aifMaskVolumeIter;
-      }
-
-     if(T1Pre)
        {
        isConvert = convert_signal_to_concentration (inputVectorVolume->GetNumberOfComponentsPerPixel(),
                                                      vectorVoxel.GetDataPointer(),
-                                                     T1Pre, m_TE, m_FA,
+                                                     m_TE, m_FA,
                                                      concentrationVectorVoxelTemp,
                                                      m_RGD_relaxivity,
                                                      S0VolumeIter.Get(),
@@ -136,8 +110,6 @@ void SignalIntensityToConcentrationImageFilter<TInputImage, TMaskImage, TOutput>
 ::PrintSelf( std::ostream& os, Indent indent ) const
 {
   Superclass::PrintSelf( os, indent );
-  os << indent << "T1PreBlood: " << m_T1PreBlood << std::endl;
-  os << indent << "T1PreTissue: " << m_T1PreTissue << std::endl;
   os << indent << "TE: " << m_TE << std::endl;
   os << indent << "FA: " << m_FA << std::endl;
   os << indent << "RGD_relaxivity: " << m_RGD_relaxivity << std::endl;

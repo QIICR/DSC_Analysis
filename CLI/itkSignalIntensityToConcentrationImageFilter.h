@@ -91,10 +91,6 @@ public:
   itkTypeMacro( SignalIntensityToConcentrationImageFilter, ImageToImageFilter );
 
   /** Set and get the number of DWI channels. */
-  itkGetMacro( T1PreBlood, float);
-  itkSetMacro( T1PreBlood, float);
-  itkGetMacro( T1PreTissue, float);
-  itkSetMacro( T1PreTissue, float);
   itkGetMacro( TE, float);
   itkSetMacro( TE, float);
   itkGetMacro( FA, float);
@@ -154,8 +150,6 @@ private:
                                                                      // not
                                                                      // implemented
 
-  float m_T1PreBlood;
-  float m_T1PreTissue;
   float m_TE;
   float m_FA;
   float m_RGD_relaxivity;

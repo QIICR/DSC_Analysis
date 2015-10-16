@@ -20,7 +20,6 @@ namespace itk
 template <class TInputImage, class TMaskImage, class TOutputImage>
 ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>::ConcentrationToQuantitativeImageFilter()
 {
-  m_T1Pre = 0.0f;
   m_TE = 0.0f;
   m_FA = 0.0f;
   m_RGD_relaxivity = 4.9E-3f;
@@ -30,7 +29,6 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>::Con
   m_xTol = 1e-5f;
   m_epsilon = 1e-9f;
   m_maxIter = 200;
-  m_hematocrit = 0.4f;
   m_aifAUC = 0.0f;
   m_AIFBATIndex = 0;
   m_UsePopulationAIF = false;
@@ -41,7 +39,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>::Con
   m_BATCalculationMode = "PeakGradient";
   this->Superclass::SetNumberOfRequiredInputs(1);
   this->Superclass::SetNthOutput(1, static_cast<TOutputImage*>(this->MakeOutput(1).GetPointer()));  // K2
-  this->Superclass::SetNthOutput(2, static_cast<TOutputImage*>(this->MakeOutput(2).GetPointer()));  // Ve
+  this->Superclass::SetNthOutput(2, static_cast<TOutputImage*>(this->MakeOutput(2).GetPointer()));  // K1
   this->Superclass::SetNthOutput(3, static_cast<TOutputImage*>(this->MakeOutput(3).GetPointer()));  // Max slope
   this->Superclass::SetNthOutput(4, static_cast<TOutputImage*>(this->MakeOutput(4).GetPointer()));  // AUC
   this->Superclass::SetNthOutput(5, static_cast<TOutputImage*>(this->MakeOutput(5).GetPointer()));  // R^2
@@ -56,11 +54,11 @@ typename ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputIm
 ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
 ::MakeOutput(DataObjectPointerArraySizeType idx)
 {
-  if(idx<9)
+  if(idx<8)
   {
     return TOutputImage::New().GetPointer();
   }
-  else if (idx==9)
+  else if (idx==8)
   {
     return VectorVolumeType::New().GetPointer();
   }
@@ -132,7 +130,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetVEOutput()
+::GetK1Output()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(1) );
 }
@@ -140,7 +138,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetFPVOutput()
+::GetMaxSlopeOutput()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(2) );
 }
@@ -148,7 +146,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetMaxSlopeOutput()
+::GetAUCOutput()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(3) );
 }
@@ -156,7 +154,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetAUCOutput()
+::GetRSquaredOutput()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(4) );
 }
@@ -164,7 +162,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetRSquaredOutput()
+::GetBATOutput()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(5) );
 }
@@ -172,7 +170,7 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetBATOutput()
+::GetMTTOutput()
 {
   return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(6) );
 }
@@ -180,17 +178,9 @@ ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 template< class TInputImage, class TMaskImage, class TOutputImage >
 TOutputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
-::GetMTTOutput()
-{
-  return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(7) );
-}
-
-template< class TInputImage, class TMaskImage, class TOutputImage >
-TOutputImage*
-ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 ::GetCBFOutput()
 {
-  return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(8) );
+  return dynamic_cast< TOutputImage * >( this->ProcessObject::GetOutput(7) );
 }
 
 template< class TInputImage, class TMaskImage, class TOutputImage >
@@ -198,7 +188,7 @@ TInputImage*
 ConcentrationToQuantitativeImageFilter< TInputImage,TMaskImage, TOutputImage >
 ::GetFittedDataOutput()
 {
-  return dynamic_cast< TInputImage * >( this->ProcessObject::GetOutput(9) );
+  return dynamic_cast< TInputImage * >( this->ProcessObject::GetOutput(8) );
 }
 
 template <class TInputImage, class TMaskImage, class TOutputImage>
@@ -215,11 +205,6 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
 
   int   aif_FirstPeakIndex = 0;
   float aif_MaxSlope = 0.0f;
-
-  // Some of the outputs are optional and may not be calculated.
-  // Let's initialize those to all zeros
-  OutputVolumeType *fpv = this->GetFPVOutput();
-  fpv->FillBuffer(0.0);
 
   // calculate AIF
   if (m_UsePrescribedAIF)
@@ -314,9 +299,8 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
 {
   VectorVoxelType vectorVoxel, fittedVectorVoxel;
 
-  float tempFpv = 0.0f;
   float tempK2 = 0.0f;
-  float tempVe = 0.0f;
+  float tempK1 = 0.0f;
   float tempMaxSlope = 0.0f;
   float tempAUC = 0.0f;
   float tempMTT = 0.0f;
@@ -328,7 +312,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
 
   VectorVolumeConstIterType inputVectorVolumeIter(inputVectorVolume, outputRegionForThread);
   OutputVolumeIterType k2VolumeIter(this->GetK2Output(), outputRegionForThread);
-  OutputVolumeIterType veVolumeIter(this->GetVEOutput(), outputRegionForThread);
+  OutputVolumeIterType k1VolumeIter(this->GetK1Output(), outputRegionForThread);
   typename VectorVolumeType::Pointer fitted = this->GetFittedDataOutput();
   VectorVolumeIterType fittedVolumeIter(fitted, outputRegionForThread);
 
@@ -338,11 +322,6 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
     roiMaskVolumeIter = MaskVolumeConstIterType(this->GetROIMask(), outputRegionForThread);
     }
 
-  OutputVolumeIterType fpvVolumeIter;
-  if(m_ModelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-    {
-    fpvVolumeIter = OutputVolumeIterType(this->GetFPVOutput(), outputRegionForThread);
-    }
   OutputVolumeIterType maxSlopeVolumeIter(this->GetMaxSlopeOutput(), outputRegionForThread);
   OutputVolumeIterType aucVolumeIter(this->GetAUCOutput(), outputRegionForThread);
   OutputVolumeIterType mttVolumeIter(this->GetMTTOutput(), outputRegionForThread);
@@ -384,7 +363,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   while (!k2VolumeIter.IsAtEnd())
     {
     success = true;
-    tempK2 = tempVe = tempFpv = tempMaxSlope = tempAUC = tempMTT = tempCBF = 0.0;
+    tempK2 = tempK1 = tempMaxSlope = tempAUC = tempMTT = tempCBF = 0.0;
     BATIndex = FirstPeakIndex = 0;
 
     if(!this->GetROIMask() || (this->GetROIMask() && roiMaskVolumeIter.Get()))
@@ -442,24 +421,20 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
           }
         }
 
-      // Calculate parameter k2, ve, and fpv
+      // Calculate parameter k2, k1, and fpv
       double rSquared = 0.0;
       if (success)
         {
         pk_solver(timeSize, &timeMinute[0],
           	const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ),
           	&m_AIF[0],
-          	tempK2, tempVe, tempFpv,
+          	tempK2, tempK1, 
           	m_fTol,m_gTol,m_xTol,
-          	m_epsilon,m_maxIter, m_hematocrit,
+          	m_epsilon,m_maxIter, 
             optimizer,costFunction,m_ModelType,m_constantBAT,m_BATCalculationMode);
 
-        itk::LMCostFunction::ParametersType param(3);
-        param[0] = tempK2; param[1] = tempVe;
-        if(m_ModelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-          {
-          param[2] = tempFpv;
-          }
+        itk::LMCostFunction::ParametersType param(2);
+        param[0] = tempK2; param[1] = tempK1;
         //itk::LMCostFunction::MeasureType measure =
         itk::LMCostFunction::ArrayType IntCb =
           costFunction->GetFittedFunction(param);
@@ -545,7 +520,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
       if (success)
         {
         tempCBF =
-          (cerebral_blood_flow(timeSize, &m_Timing[0], const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) );
+          (cerebral_blood_flow(timeSize, &m_Timing[0], const_cast<float *>(shiftedVectorVoxel.GetDataPointer() ), BATIndex,  m_AUCTimeInterval) )*60;
         }
      
       // Do we mask the output volumes by the R-squared value?
@@ -556,20 +531,16 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
         if (success)
           {
           k2VolumeIter.Set(static_cast<OutputVolumePixelType>(tempK2) );
-          veVolumeIter.Set(static_cast<OutputVolumePixelType>(tempVe) );
+          k1VolumeIter.Set(static_cast<OutputVolumePixelType>(tempK1) );
           maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(tempMaxSlope) );
           aucVolumeIter.Set(static_cast<OutputVolumePixelType>(tempAUC) );
           mttVolumeIter.Set(static_cast<OutputVolumePixelType>(tempMTT) );
           cbfVolumeIter.Set(static_cast<OutputVolumePixelType>(tempCBF) );
-          if(m_ModelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-            {
-            fpvVolumeIter.Set(static_cast<OutputVolumePixelType>(tempFpv));
-            }
           }
         else
           {
           k2VolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
-          veVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
+          k1VolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
           maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
           aucVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
           mttVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
@@ -579,15 +550,11 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
       else
         {
         k2VolumeIter.Set(static_cast<OutputVolumePixelType>(tempK2) );
-        veVolumeIter.Set(static_cast<OutputVolumePixelType>(tempVe) );
+        k1VolumeIter.Set(static_cast<OutputVolumePixelType>(tempK1) );
         maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(tempMaxSlope) );
         aucVolumeIter.Set(static_cast<OutputVolumePixelType>(tempAUC) );
         mttVolumeIter.Set(static_cast<OutputVolumePixelType>(tempMTT) );
         cbfVolumeIter.Set(static_cast<OutputVolumePixelType>(tempCBF) );
-        if(m_ModelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-          {
-          fpvVolumeIter.Set(static_cast<OutputVolumePixelType>(tempFpv));
-          }
         }
      
       // RSquared output volume is always written
@@ -596,7 +563,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
     else
       {
       k2VolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
-      veVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
+      k1VolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       maxSlopeVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       aucVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
       mttVolumeIter.Set(static_cast<OutputVolumePixelType>(0) );
@@ -604,7 +571,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
       }
 
     ++k2VolumeIter;
-    ++veVolumeIter;
+    ++k1VolumeIter;
     ++maxSlopeVolumeIter;
     ++aucVolumeIter;
     ++mttVolumeIter;
@@ -617,11 +584,6 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
     if(this->GetROIMask())
       {
       ++roiMaskVolumeIter;
-      }
-
-    if(m_ModelType == itk::LMCostFunction::TOFTS_3_PARAMETER)
-      {
-      ++fpvVolumeIter;
       }
 
     progress.CompletedPixel();
@@ -890,7 +852,6 @@ void ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   os << indent << "Parameter tolerance: " << m_xTol << std::endl;
   os << indent << "Epsilon: " << m_epsilon << std::endl;
   os << indent << "Maximum number of iterations: " << m_maxIter << std::endl;
-  os << indent << "Hematocrit: " << m_hematocrit << std::endl;
 }
 
 } // end namespace itk

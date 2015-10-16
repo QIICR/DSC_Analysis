@@ -39,7 +39,7 @@ public:
   enum { SpaceDimension =  2 };
   unsigned int RangeDimension; 
 
-  enum ModelType { TOFTS_2_PARAMETER = 1, TOFTS_3_PARAMETER};
+  enum ModelType { TOFTS_2_PARAMETER = 1 };
         
   typedef Superclass::ParametersType              ParametersType;
   typedef Superclass::DerivativeType              DerivativeType;
@@ -47,18 +47,12 @@ public:
   typedef Superclass::ParametersValueType         ValueType;
 		      
         
-  float m_Hematocrit;
-
   int m_ModelType;
 
   LMCostFunction()
   {
   }
         
-  void SetHematocrit (float hematocrit) {
-    m_Hematocrit = hematocrit;
-  }
-
   void SetModelType (int model) {
     m_ModelType = model;
   }
@@ -109,21 +103,15 @@ public:
     MeasureType measure(RangeDimension);
 
     ValueType K2 = parameters[0];
-    ValueType Ve = parameters[1];
+    ValueType K1 = parameters[1];
             
-    ArrayType VeTerm;
-    VeTerm = -K2/Ve*Time;
+    ArrayType K1Term;
+    K1Term = -K2/K1*Time;
     ValueType deltaT = Time(1) - Time(0);
     
-    if( m_ModelType == TOFTS_3_PARAMETER)
+    if(m_ModelType == TOFTS_2_PARAMETER)
       {
-      ValueType f_pv = parameters[2];
-      measure = Cv - (1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm)) + f_pv*Cb));
-      }
-    else if(m_ModelType == TOFTS_2_PARAMETER)
-      {
-      //measure = Cv - (1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm))));
-      measure = Cv -(Ve*Cb-K2*IntCb);
+      measure = Cv -(K1*Cb-K2*IntCb);
       }
             
     return measure; 
@@ -134,21 +122,15 @@ public:
     MeasureType measure(RangeDimension);
 
     ValueType K2 = parameters[0];
-    ValueType Ve = parameters[1];
+    ValueType K1 = parameters[1];
             
-    ArrayType VeTerm;
-    VeTerm = -K2/Ve*Time;
+    ArrayType K1Term;
+    K1Term = -K2/K1*Time;
     ValueType deltaT = Time(1) - Time(0);
     
-    if( m_ModelType == TOFTS_3_PARAMETER)
+    if(m_ModelType == TOFTS_2_PARAMETER)
       {
-      ValueType f_pv = parameters[2];
-      measure = 1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm)) + f_pv*Cb);
-      }
-    else if(m_ModelType == TOFTS_2_PARAMETER)
-      {
-      //measure = 1/(1.0-m_Hematocrit)*(K2*deltaT*Convolution(Cb,Exponential(VeTerm)));
-      measure = Ve*Cb-K2*IntCb;
+      measure = K1*Cb-K2*IntCb;
       }
             
     return measure; 
@@ -165,10 +147,6 @@ public:
     if(m_ModelType == TOFTS_2_PARAMETER)
       {
       return 2;
-      }
-    else // if(m_ModelType == TOFTS_3_PARAMETER)
-      {
-      return 3;
       }
   }
         
@@ -261,22 +239,21 @@ private:
 bool pk_solver(int signalSize, const float* timeAxis, 
                const float* PixelConcentrationCurve, 
                const float* BloodConcentrationCurve, 
-               float& K2, float& Ve, float& Fpv,
+               float& K2, float& K1, 
                float fTol = 1e-4f, 
                float gTol = 1e-4f, 
                float xTol = 1e-5f,
                float epsilon = 1e-9f, 
                int maxIter = 200,
-               float hematocrit = 0.4f,
                int modelType = itk::LMCostFunction::TOFTS_2_PARAMETER,
                int constantBAT = 0,
                const std::string BATCalculationMode = "PeakGradient");
 
 bool pk_solver(int signalSize, const float* timeAxis, 
                const float* PixelConcentrationCurve, const float* BloodConcentrationCurve, 
-               float& K2, float& Ve, float& Fpv,
+               float& K2, float& K1, 
                float fTol, float gTol,float xTol,
-               float epsilon, int maxIter, float hematocrit,
+               float epsilon, int maxIter, 
                itk::LevenbergMarquardtOptimizer* optimizer,
                LMCostFunction* costFunction,
                int modelType = itk::LMCostFunction::TOFTS_2_PARAMETER,
@@ -288,7 +265,7 @@ void pk_clear();
 
 bool convert_signal_to_concentration (unsigned int signalSize, 
                                       const float* SignalIntensityCurve, 
-                                      float T1, float TE, float FA,
+                                      float TE, float FA,
                                       float* concentration,
                                       float relaxivity = 4.9E-3f,
                                       float s0 = -1.0f,

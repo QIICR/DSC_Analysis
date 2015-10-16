@@ -341,8 +341,6 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
     converter->SetROIMask(roiMaskVolume);
     }
 
-  converter->SetT1PreBlood(T1PreBloodValue);
-  converter->SetT1PreTissue(T1PreTissueValue);
   converter->SetTE(TEValue);
   converter->SetFA(FAValue);
   converter->SetBATCalculationMode(BATCalculationMode);
@@ -393,7 +391,6 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
   quantifier->SetxTol(XTolerance);
   quantifier->Setepsilon(Epsilon);
   quantifier->SetmaxIter(MaxIter);
-  quantifier->Sethematocrit(Hematocrit);
   quantifier->SetconstantBAT(ConstantBAT);
   quantifier->SetBATCalculationMode(BATCalculationMode);
   if(ROIMaskFileName != "")
@@ -401,11 +398,6 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
     quantifier->SetROIMask(roiMaskVolume);
     }
 
-  if(ComputeFpv)
-    {
-    quantifier->SetModelType(itk::LMCostFunction::TOFTS_3_PARAMETER);
-    }
-  else
     {
     quantifier->SetModelType(itk::LMCostFunction::TOFTS_2_PARAMETER);
     }
@@ -424,25 +416,13 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
     k2writer->Update();
     }
 
-  if (!OutputVeFileName.empty())
+  if (!OutputK1FileName.empty())
     {
     typename OutputVolumeWriterType::Pointer vewriter = OutputVolumeWriterType::New();
-    vewriter->SetInput(quantifier->GetVEOutput() );
-    vewriter->SetFileName(OutputVeFileName.c_str() );
+    vewriter->SetInput(quantifier->GetK1Output() );
+    vewriter->SetFileName(OutputK1FileName.c_str() );
     vewriter->SetUseCompression(1);
     vewriter->Update();
-    }
-
-  if(ComputeFpv)
-    {
-    if (!OutputFpvFileName.empty())
-      {
-      typename OutputVolumeWriterType::Pointer fpvwriter =OutputVolumeWriterType::New();
-      fpvwriter->SetInput(quantifier->GetFPVOutput() );
-      fpvwriter->SetFileName(OutputFpvFileName.c_str() );
-      fpvwriter->SetUseCompression(1);
-      fpvwriter->Update();
-      }
     }
 
   if (!OutputMaxSlopeFileName.empty())

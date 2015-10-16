@@ -13,22 +13,6 @@
     <label>DSC Parameters</label>
     <description><![CDATA[Parameters used for DSC MRI Analysis]]></description>
     <float hidden="true">
-      <name>T1PreBloodValue</name>   
-      <description><![CDATA[T1 value for blood.]]></description>
-      <longflag>T1Blood</longflag>      
-      <label>T1 Blood Value</label>
-      <channel>input</channel>
-      <default>1600</default>
-    </float>    
-    <float hidden="true">
-      <name>T1PreTissueValue</name>   
-      <description><![CDATA[T1 value for tissue.]]></description>
-      <longflag>T1Tissue</longflag>      
-      <label>T1 Tissue Value</label>
-      <channel>input</channel>
-      <default>1597</default>
-    </float>    
-    <float hidden="true">
       <name>RelaxivityValue</name>   
       <description><![CDATA[Contrast agent relaxivity value. Default value corresponds to Gd-DPTA (Magnevist) at 3T.]]></description>
       <longflag>relaxivity</longflag>      
@@ -84,14 +68,6 @@
       <channel>input</channel>
       <default>200</default>      
     </float>
-    <float hidden="true">
-      <name>Hematocrit</name>   
-      <description><![CDATA[Hematocrit value, volume percentage of red blood cells in blood.]]></description>
-      <longflag>hematocrit</longflag>      
-      <label>Hematocrit Value</label>
-      <channel>input</channel>
-      <default>0.4</default>
-    </float>
     <float>
       <name>AUCTimeInterval</name>   
       <description><![CDATA[CBV and CBF Time Interval value.]]></description>
@@ -100,13 +76,6 @@
       <channel>input</channel>
       <default>90</default>      
     </float>
-    <boolean hidden="true">
-      <name>ComputeFpv</name>
-      <longflag>computeFpv</longflag>
-      <label>Compute fpv (3-parameter model)</label>
-      <description><![CDATA[Enable estimation of fractional plasma volume at each voxel.]]></description>
-      <default>False</default>
-    </boolean>
     <boolean>
       <name>UsePopulationAIF</name>
       <longflag>usePopAif</longflag>
@@ -156,18 +125,11 @@
       <description><![CDATA[Output leakage map.]]></description>
     </image>
     <image hidden="true">
-      <name>OutputVeFileName</name>
-      <longflag>outputVe</longflag>
-      <label>Output ve image</label>
+      <name>OutputK1FileName</name>
+      <longflag>outputK1</longflag>
+      <label>Output K1 image</label>
       <channel>output</channel>      
-      <description><![CDATA[Output fractional volume for extracellular space at each voxel.]]></description>
-    </image>
-    <image hidden="true">
-      <name>OutputFpvFileName</name>
-      <longflag>outputFpv</longflag>
-      <label>Output fpv image</label>
-      <channel>output</channel>      
-      <description><![CDATA[Output fractional plasma volume at each voxel.]]></description>
+      <description><![CDATA[Output residual of leakage correction.]]></description>
     </image>
     <image hidden="true">
       <name>OutputMaxSlopeFileName</name>

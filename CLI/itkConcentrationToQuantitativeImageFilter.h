@@ -105,8 +105,6 @@ public:
 
   /** Set and get the parameters to control the calculation of
   quantified valued */
-  itkGetMacro( T1Pre, float);
-  itkSetMacro( T1Pre, float);
   itkGetMacro( TE, float);
   itkSetMacro( TE, float);
   itkGetMacro( FA, float);
@@ -125,8 +123,6 @@ public:
   itkSetMacro( epsilon, float);
   itkGetMacro( maxIter, int);
   itkSetMacro( maxIter, int);
-  itkGetMacro( hematocrit, float);
-  itkSetMacro( hematocrit, float);
   itkGetMacro( AUCTimeInterval, float);
   itkSetMacro( AUCTimeInterval, float);
   itkGetMacro( ModelType, int);
@@ -189,8 +185,7 @@ public:
 
   /// Get the quantitative output images
   TOutputImage* GetK2Output();
-  TOutputImage* GetVEOutput();
-  TOutputImage* GetFPVOutput();
+  TOutputImage* GetK1Output();
   TOutputImage* GetMaxSlopeOutput();
   TOutputImage* GetAUCOutput();
   TOutputImage* GetMTTOutput();
@@ -226,7 +221,6 @@ private:
   ConcentrationToQuantitativeImageFilter(const Self &); // purposely not implemented
   void operator=(const Self &); // purposely not implemented
 
-  float  m_T1Pre;
   float  m_TE;
   float  m_FA;
   float  m_RGD_relaxivity;
@@ -236,7 +230,6 @@ private:
   float  m_xTol;
   float  m_epsilon;
   int    m_maxIter;
-  float  m_hematocrit;
   float  m_AUCTimeInterval;
   int    m_AIFBATIndex;
   int    m_ModelType;
