@@ -58,7 +58,7 @@ std::vector<float> GetTiming(itk::MetaDataDictionary& dictionary)
       std::string frameLabelsString;
       itk::ExposeMetaData(dictionary, "MultiVolume.FrameLabels", frameLabelsString);
       std::stringstream frameLabelsStream(frameLabelsString);
-      if (tag == "TriggerTime" || tag == "AcquisitionTime" || tag == "SeriesTime")
+      if (tag == "TriggerTime" || tag == "AcquisitionTime" || tag == "SeriesTime" || tag == "Time")
         {
         float t;
         float t0 = 0.0;
