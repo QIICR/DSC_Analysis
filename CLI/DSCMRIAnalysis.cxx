@@ -277,7 +277,7 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
 
   //Read AIF mask
   typename MaskVolumeReaderType::Pointer aifMaskVolumeReader = MaskVolumeReaderType::New();
-  typename MaskVolumeType::Pointer aifMaskVolume = 0;
+  typename MaskVolumeType::Pointer aifMaskVolume;
   if (AIFMaskFileName != "")
     {
     aifMaskVolumeReader->SetFileName(AIFMaskFileName.c_str() );
@@ -287,7 +287,7 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
 
   //Read ROI mask
   typename MaskVolumeReaderType::Pointer roiMaskVolumeReader = MaskVolumeReaderType::New();
-  typename MaskVolumeType::Pointer roiMaskVolume = 0;
+  typename MaskVolumeType::Pointer roiMaskVolume;
   if (ROIMaskFileName != "")
     {
     roiMaskVolumeReader->SetFileName(ROIMaskFileName.c_str() );

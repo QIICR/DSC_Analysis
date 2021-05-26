@@ -62,7 +62,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>
   {
     return VectorVolumeType::New().GetPointer();
   }
-  return 0;
+  return nullptr;
 }
 
 // Set a prescribed AIF.  This is not currrently in the input vector,
