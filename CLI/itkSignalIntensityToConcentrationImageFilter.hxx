@@ -15,6 +15,7 @@ SignalIntensityToConcentrationImageFilter<TInputImage, TMaskImage,
   m_RGD_relaxivity = 4.9E-3f;
   m_S0GradThresh = 15.0f;
   this->SetNumberOfRequiredInputs(1);
+  this->DynamicMultiThreadingOff();
 }
 
 template<class TInputImage, class TMaskImage, class TOutputImage>

@@ -47,6 +47,7 @@ ConcentrationToQuantitativeImageFilter<TInputImage,TMaskImage,TOutputImage>::Con
   this->Superclass::SetNthOutput(7, static_cast<TOutputImage*>(this->MakeOutput(7).GetPointer()));  // MTT
   this->Superclass::SetNthOutput(8, static_cast<TOutputImage*>(this->MakeOutput(8).GetPointer()));  // CBF
   this->Superclass::SetNthOutput(9, static_cast<VectorVolumeType*>(this->MakeOutput(9).GetPointer())); // fitted
+  this->DynamicMultiThreadingOff();
 }
 
 template< class TInputImage, class TMaskImage, class TOutputImage >
