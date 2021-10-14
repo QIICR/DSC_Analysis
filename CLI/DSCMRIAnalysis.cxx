@@ -232,21 +232,6 @@ int DoIt( int argc, char * argv[], const T1 &, const T2 &)
     return EXIT_FAILURE;
     }
 
-  // // EchoTime
-  // float echoTime = 0.0;
-  // try 
-  //   {
-  //   echoTime = GetEchoTime(inputVectorVolume->GetMetaDataDictionary());
-  //   }
-  // catch (itk::ExceptionObject &exc)
-  //   {
-  //   itkGenericExceptionMacro(<< exc.GetDescription() 
-  //           << " Image " << InputFourDImageFileName.c_str() 
-  //           << " does not contain sufficient attributes to support algorithms.");
-  //   return EXIT_FAILURE;
-    
-  //   }
-
   // FlipAngle
   float FAValue = 0.0;
   try 
